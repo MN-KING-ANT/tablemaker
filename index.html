@@ -3,9 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SPSS TABLES 신택스 자동 생성기</title>
-  <!-- SheetJS (Excel/CSV 파싱 라이브러리) -->
+  <title>SPSS TABLES 신택스 자동 생성기 (BxB 포함)</title>
+  <!-- SheetJS (Excel/CSV 파싱 라이브러리 + 예비 CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    if (typeof XLSX === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>');
+    }
+  </script>
   <style>
     :root {
       --bg: #f8fafc;
@@ -15,7 +20,6 @@
       --muted: #64748b;
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
-      --accent: #0f766e;
       --code-bg: #0f172a;
       --code-text: #e2e8f0;
     }
@@ -32,7 +36,7 @@
     header {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 18px 28px;
+      padding: 16px 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -41,7 +45,7 @@
     }
     header h1 {
       margin: 0;
-      font-size: 1.35rem;
+      font-size: 1.3rem;
       font-weight: 700;
       color: var(--text);
       display: flex;
@@ -50,7 +54,7 @@
     }
     .badge {
       font-size: 0.75rem;
-      padding: 3px 8px;
+      padding: 3px 9px;
       border-radius: 999px;
       background: #dbeafe;
       color: #1e40af;
@@ -58,14 +62,14 @@
     }
 
     .container {
-      max-width: 1480px;
+      max-width: 1520px;
       margin: 0 auto;
       padding: 20px 28px;
       display: grid;
-      grid-template-columns: 440px 1fr;
+      grid-template-columns: 460px 1fr;
       gap: 20px;
     }
-    @media (max-width: 1100px) {
+    @media (max-width: 1120px) {
       .container { grid-template-columns: 1fr; }
     }
 
@@ -121,12 +125,28 @@
       margin-bottom: 4px;
     }
     .form-group input[type="text"],
+    .form-group textarea,
     .form-group select {
       width: 100%;
       padding: 8px 10px;
       border: 1px solid var(--border);
       border-radius: 7px;
-      font-size: 0.85rem;
+      font-size: 0.83rem;
+      font-family: inherit;
+    }
+    .form-group textarea {
+      font-family: 'JetBrains Mono', 'Consolas', ui-monospace, monospace;
+      resize: vertical;
+      min-height: 62px;
+    }
+    .banner-preview {
+      margin-top: 5px;
+      padding: 6px 9px;
+      background: #f1f5f9;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      color: #334155;
+      word-break: break-all;
     }
     .form-row {
       display: grid;
@@ -137,17 +157,17 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 0.82rem;
+      font-size: 0.81rem;
       margin-top: 6px;
       color: #334155;
+      cursor: pointer;
     }
 
     .q-list {
-      max-height: 460px;
+      max-height: 430px;
       overflow-y: auto;
       border: 1px solid var(--border);
       border-radius: 8px;
-      divide-y: 1px solid var(--border);
     }
     .q-item {
       padding: 9px 12px;
@@ -201,7 +221,7 @@
       border-radius: 8px;
       border: 1px solid var(--border);
       background: #f1f5f9;
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       font-weight: 600;
       cursor: pointer;
       color: #334155;
@@ -246,7 +266,7 @@
       font-size: 0.82rem;
       line-height: 1.55;
       overflow-x: auto;
-      max-height: 760px;
+      max-height: 820px;
       overflow-y: auto;
       white-space: pre;
     }
@@ -282,7 +302,7 @@
 <header>
   <h1>
     SPSS TABLES 신택스 자동 생성기
-    <span class="badge">Value Label + SA / MA / Ranking / Grid / Numeric / Scale</span>
+    <span class="badge">Value Labels + BxB + SA / MA / Ranking / Grid / Numeric / Scale</span>
   </h1>
   <div class="action-bar">
     <button class="btn btn-secondary" onclick="copyCurrentSyntax()">현재 탭 복사</button>
@@ -314,17 +334,25 @@
     </div>
 
     <div class="card">
-      <h2>2. 신택스 공통 옵션</h2>
+      <h2>2. 배너(Banner) & BxB 설정</h2>
       <div class="form-group">
-        <label>배너(Banner) 변수 설정</label>
-        <select id="bannerMode" onchange="onBannerModeChange()" style="margin-bottom:6px;">
-          <option value="placeholder">'배너' 텍스트로 표시 (BY T1+배너)</option>
-          <option value="blank">공란으로 비워두기 (BY T1)</option>
-          <option value="custom">직접 배너 변수 입력</option>
-        </select>
-        <input type="text" id="bannerCustom" placeholder="예: ds1+dage+MP_CORE 또는 공백 구분" value="ds1+dage+MP_CORE+MP_KEY4+da1+b6a+b6b+b6c+b6d+b6e+b6f+b6g+dc1+dc151" style="display:none;" oninput="renderAll()" />
+        <label>배너 변수 입력 (+, 공백, 쉼표, 줄바꿈 모두 인식 / 비우면 '배너'로 표시)</label>
+        <textarea id="bannerInput" placeholder="예: dco+ds1+ds2_2+ds6+db14+dc2_fst+dc4_fst+dde1+dde2+dde10" oninput="renderAll()">ds1+dage+MP_CORE+MP_KEY4+da1+b6a+b6b+b6c+b6d+b6e+b6f+b6g+dc1+dc151</textarea>
+        <div class="banner-preview" id="bannerPreview"></div>
       </div>
 
+      <label class="checkbox-row">
+        <input type="checkbox" id="includeBxB" checked onchange="renderAll()" />
+        <strong>맨 앞단에 배너x배너 (&lt; Table BxB &gt;) 테이블 생성</strong>
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="includeBxBCompute" checked onchange="renderAll()" />
+        BxB용 x변수 복사문(<code>COMPUTE x... = 배너 .</code>) 함께 생성
+      </label>
+    </div>
+
+    <div class="card">
+      <h2>3. 신택스 공통 옵션</h2>
       <div class="form-row">
         <div class="form-group">
           <label>테이블 타이틀 접두어</label>
@@ -339,33 +367,43 @@
         </div>
       </div>
 
-      <div class="form-group" style="margin-bottom:0;">
-        <label>척도형(Scale) 리코드 & 통계량 옵션</label>
-        <select id="scaleRecodeMode" onchange="renderAll()">
-          <option value="auto">선지 개수에 맞춰 자동 리코드 (5점: 4,5 / 6점: 5,6 등)</option>
-          <option value="fixed5">고정 5점 리코드 (4,5=1)(3=2)(1,2=3)</option>
-        </select>
-        <label class="checkbox-row">
-          <input type="checkbox" id="scaleIncludeMedian" checked onchange="renderAll()" />
-          Scale 문항에 [Mean]과 함께 [Median]도 출력
-        </label>
-        <label class="checkbox-row">
-          <input type="checkbox" id="autoDetectScale" onchange="applyAutoScaleDetection()" />
-          만족도/추천의향/신뢰도 등 척도형 SA·Grid 문항을 Scale로 자동 전환
-        </label>
+      <div class="form-row">
+        <div class="form-group">
+          <label>라벨 명령어 표기</label>
+          <select id="labelKeyword" onchange="renderAll()">
+            <option value="VALUE LABELS">VALUE LABELS (정식 명령어)</option>
+            <option value="value lable">value lable (기존 표기)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Scale 리코드 기준</label>
+          <select id="scaleRecodeMode" onchange="renderAll()">
+            <option value="auto">선지 수 자동 (5점:4,5 / 6점:5,6)</option>
+            <option value="fixed5">고정 5점 (4,5=1)(3=2)(1,2=3)</option>
+          </select>
+        </div>
       </div>
+
+      <label class="checkbox-row">
+        <input type="checkbox" id="sanitizeCP949" checked onchange="renderAll()" />
+        SPSS 로컬 인코딩(CP949) 경고 문자 자동 치환 (–→-, ‡→&lt;&gt;, 움라우트/따옴표)
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="scaleIncludeMedian" checked onchange="renderAll()" />
+        Scale 문항에 [Mean]과 함께 [Median]도 출력
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="autoDetectScale" onchange="applyAutoScaleDetection()" />
+        만족도/추천의향/신뢰도 등 척도형 SA·Grid 문항을 Scale로 자동 전환
+      </label>
     </div>
 
     <div class="card">
       <h2>
-        <span>3. 파싱된 문항 목록 (<span id="qCount">0</span>개)</span>
+        <span>4. 파싱된 문항 목록 (<span id="qCount">0</span>개)</span>
         <input type="text" id="qSearch" placeholder="변수명/질문 검색..." oninput="renderQuestionList()" style="width:150px; padding:4px 8px; font-size:0.78rem; border:1px solid var(--border); border-radius:6px;" />
       </h2>
-      <div class="q-list" id="questionList">
-        <div style="padding:24px; text-align:center; color:var(--muted); font-size:0.83rem;">
-          좌측 상단에서 데이터 가이드 파일(로직체크.xlsx)을 업로드하면 문항 목록이 표시됩니다.
-        </div>
-      </div>
+      <div class="q-list" id="questionList"></div>
     </div>
   </div>
 
@@ -373,13 +411,14 @@
   <div>
     <div class="card">
       <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('all', this)">통합 신택스 (Value Label + TABLES)</button>
-        <button class="tab-btn" onclick="switchTab('labels', this)">Value Label만 보기</button>
-        <button class="tab-btn" onclick="switchTab('tables', this)">TABLES 신택스만 보기</button>
+        <button class="tab-btn active" onclick="switchTab('all', this)">통합 신택스 (Label + BxB + TABLES)</button>
+        <button class="tab-btn" onclick="switchTab('bxb', this)">BxB 테이블만 보기</button>
+        <button class="tab-btn" onclick="switchTab('labels', this)">Value Labels만 보기</button>
+        <button class="tab-btn" onclick="switchTab('tables', this)">문항 TABLES만 보기</button>
       </div>
 
       <div class="status-bar">
-        <span id="syntaxSummary">데이터 가이드 파일을 업로드하거나 아래 샘플로 확인하세요.</span>
+        <span id="syntaxSummary">준비 완료</span>
         <span id="rawdataSummary">Rawdata: 미업로드 (가이드 기준 생성)</span>
       </div>
 
@@ -391,22 +430,14 @@
 <div class="toast" id="toast">복사되었습니다!</div>
 
 <script>
-  // 전역 상태
   let parsedQuestions = [];
   let rawDataColumns = [];
-  let rawDataSampleRows = [];
   let currentTab = 'all';
 
-  // 초기 샘플 데이터 (첨부된 로직체크.xlsx 대표 문항 프리셋)
   const INITIAL_SAMPLE_QUESTIONS = [
     {
       var: 's1', q: '현재 거주하고 계신 국가는 어디입니까?', origType: 'Single answer', type: 'SA',
       base: 'Base: All', options: [{code:'1', label:'미국'}, {code:'2', label:'일본'}, {code:'3', label:'독일'}],
-      rows: [], cols: [], rankCount: 3
-    },
-    {
-      var: 's3', q: '귀하의 나이를 입력해 주십시오.', origType: 'Single answer', type: 'SA',
-      base: 'Base: All', options: [{code:'1', label:'25-45'}],
       rows: [], cols: [], rankCount: 3
     },
     {
@@ -415,17 +446,7 @@
       rows: [], cols: [], rankCount: 3
     },
     {
-      var: 's4_us', q: 'Region', origType: 'Single answer', type: 'SA',
-      base: 'Base: s1=1',
-      options: [
-        {code:'1', label:'New England'}, {code:'2', label:'Middle Atlantic'}, {code:'3', label:'East North Central'},
-        {code:'4', label:'West North Central'}, {code:'5', label:'South Atlantic'}, {code:'6', label:'East South Central'},
-        {code:'7', label:'West South Central'}, {code:'8', label:'Mountain'}, {code:'9', label:'Pacific'}
-      ],
-      rows: [], cols: [], rankCount: 3
-    },
-    {
-      var: 's0', q: '본 조사는 스킨케어 제품 이용에 관한 조사이며, 응답 내용은 통계 목적으로만 사용됩니다. 개인정보 수집 / 이용에 동의하십니까?', origType: 'Single answer', type: 'SA',
+      var: 's0', q: '본 조사는 스킨케어 제품 이용에 관한 조사이며, 응답 내용은 통계 목적으로만 사용됩니다. 개인정보 수집/이용에 동의하십니까?', origType: 'Single answer', type: 'SA',
       base: 'Base: All', options: [{code:'1', label:'동의함'}, {code:'2', label:'동의하지 않음'}],
       rows: [], cols: [], rankCount: 3
     },
@@ -443,43 +464,12 @@
       base: 'Base: All',
       options: [
         {code:'1', label:'얼굴 전체가 건조하고 당김'}, {code:'2', label:'겉은 번들거리는데 속은 건조함 (속건조)'},
-        {code:'3', label:'번들거림 / 과다 유분'}, {code:'4', label:'넓은 모공'}, {code:'5', label:'블랙헤드 / 화이트헤드'},
-        {code:'6', label:'여드름 / 뾰루지'}, {code:'7', label:'여드름 흉터 (패인 자국 / 붉은 자국 등)'},
-        {code:'8', label:'잡티 / 기미 / 색소침착'}, {code:'9', label:'칙칙한 피부톤 / 윤기 부족'},
-        {code:'10', label:'잔주름 / 주름'}, {code:'11', label:'탄력 저하 / 피부 처짐'}, {code:'12', label:'붉은기 / 홍조'},
-        {code:'13', label:'민감함 / 따가움 / 쉽게 자극받음'}, {code:'14', label:'기타'}, {code:'15', label:'특별한 피부 고민 없음'}
-      ],
-      rows: [], cols: [], rankCount: 3
-    },
-    {
-      var: 'c4', q: '다음 각 한국 스킨케어 제품을 주로 어디에서 구매하십니까? 제품별로 가장 많이 이용하는 구매처를 하나씩 선택해 주십시오.', origType: 'Grid, single answer per row', type: 'GRID_SA',
-      base: 'Base: c1=1-2 & c2=1-16',
-      options: [],
-      rows: [
-        {code:'a', label:'클렌징 폼 / 젤', logic:'Base: c3=1'},
-        {code:'b', label:'클렌징 오일 / 워터 / 밤', logic:'Base: c3=2'}
-      ],
-      cols: [
-        {code:'1', label:'종합 온라인 마켓플레이스'}, {code:'2', label:'뷰티 전문 온라인몰 / 앱'}, {code:'3', label:'브랜드 공식 온라인몰 / 앱'}
-      ],
-      rankCount: 3
-    },
-    {
-      var: 'd1a', q: '다음 제품을 1년에 보통 몇 번 구매하십니까? 제품별로 구매 횟수를 숫자로 입력해 주십시오. - 필오프 / 랩핑 팩 (얼굴에 바르고 말린 뒤 떼어내는 팩)', origType: 'Numeric', type: 'NUMERIC',
-      base: 'Base: s6=4', options: [], rows: [], cols: [], rankCount: 3
-    },
-    {
-      var: 'c6', q: '지금까지 사용해 본 한국 스킨케어 제품에 전반적으로 얼마나 만족하십니까?', origType: 'Single answer', type: 'SCALE',
-      base: 'Base: c1=1-3',
-      options: [
-        {code:'1', label:'매우 불만족'}, {code:'2', label:'불만족'}, {code:'3', label:'다소 불만족'},
-        {code:'4', label:'다소 만족'}, {code:'5', label:'만족'}, {code:'6', label:'매우 만족'}
+        {code:'3', label:'번들거림 / 과다 유분'}, {code:'4', label:'넓은 모공'}, {code:'5', label:'블랙헤드 / 화이트헤드'}
       ],
       rows: [], cols: [], rankCount: 3
     }
   ];
 
-  // 초기화
   window.addEventListener('DOMContentLoaded', () => {
     parsedQuestions = JSON.parse(JSON.stringify(INITIAL_SAMPLE_QUESTIONS));
     setupDropzone('guideDropzone', 'guideInput', handleGuideFile);
@@ -503,14 +493,11 @@
     });
   }
 
-  function onBannerModeChange() {
-    const mode = document.getElementById('bannerMode').value;
-    document.getElementById('bannerCustom').style.display = mode === 'custom' ? 'block' : 'none';
-    renderAll();
-  }
-
-  // 데이터 가이드 파일 파싱
   function handleGuideFile(file) {
+    if (typeof XLSX === 'undefined') {
+      alert('엑셀 파싱 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침 해주세요.');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       const data = new Uint8Array(e.target.result);
@@ -528,18 +515,20 @@
     reader.readAsArrayBuffer(file);
   }
 
-  // Rawdata 파일 파싱
   function handleDataFile(file) {
+    if (typeof XLSX === 'undefined') {
+      alert('엑셀 파싱 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침 해주세요.');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
       const data = new Uint8Array(e.target.result);
-      const wb = XLSX.read(data, { type: 'array', sheetRows: 50 }); // 헤더 및 상위 샘플 행만 고속 파싱
+      const wb = XLSX.read(data, { type: 'array', sheetRows: 10 });
       const sheetName = wb.SheetNames.includes('Data') ? 'Data' : wb.SheetNames[0];
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' });
 
       if (rows.length > 0) {
         rawDataColumns = rows[0].map(c => String(c).trim()).filter(Boolean);
-        rawDataSampleRows = rows.slice(1);
       }
       document.getElementById('dataDropzone').classList.add('loaded');
       document.getElementById('dataFileName').textContent = `${file.name} (${rawDataColumns.length}컬럼)`;
@@ -552,7 +541,6 @@
     reader.readAsArrayBuffer(file);
   }
 
-  // 문항 유형 정규화
   function normalizeQuestionType(rawType) {
     const t = String(rawType || '').trim().toLowerCase();
     if (!t) return null;
@@ -570,7 +558,7 @@
   function parseGuideSheet(rows) {
     const questions = [];
     let curr = null;
-    let mode = 'options'; // 'options' | 'rows' | 'cols'
+    let mode = 'options';
 
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
@@ -578,7 +566,6 @@
       const q = String(r[1] ?? '').trim();
       const t = String(r[2] ?? '').trim();
 
-      // 헤더 행 건너뛰기
       if (v.toLowerCase() === 'variable name' || t.toLowerCase() === 'question type and logic') continue;
 
       const normType = normalizeQuestionType(t);
@@ -614,7 +601,6 @@
         continue;
       }
 
-      // Base 로직 추출 (d1a처럼 v가 비어 있는 줄에 Base:가 있는 경우 및 & 연결 줄 포함)
       if (t.toLowerCase().startsWith('base:') && !curr.base && mode !== 'rows') {
         curr.base = t;
       } else if (t.startsWith('&') && curr.base) {
@@ -623,13 +609,9 @@
 
       if (v !== '') {
         const item = { code: v, label: q.replace(/\s*\n\s*/g, ' ').trim(), logic: t };
-        if (mode === 'rows') {
-          curr.rows.push(item);
-        } else if (mode === 'cols') {
-          curr.cols.push(item);
-        } else {
-          curr.options.push(item);
-        }
+        if (mode === 'rows') curr.rows.push(item);
+        else if (mode === 'cols') curr.cols.push(item);
+        else curr.options.push(item);
       }
     }
     if (curr) questions.push(curr);
@@ -640,7 +622,6 @@
     }
   }
 
-  // 만족도/추천/신뢰도/동의척도 자동 Scale 감지
   function isLikelyScaleQuestion(q) {
     const opts = q.cols && q.cols.length > 0 ? q.cols : q.options;
     if (!opts || (opts.length !== 5 && opts.length !== 6 && opts.length !== 7 && opts.length !== 11)) return false;
@@ -669,11 +650,9 @@
     }
   }
 
-  // Rawdata 컬럼과 데이터 가이드 문항 매칭 (Ranking 4th/5th 감지 포함)
   function reconcileWithRawData() {
     if (!rawDataColumns.length) return;
     const colSet = new Set(rawDataColumns);
-
     const rankOrderSuffixes = [
       ['fst', '1st', 'first', 'r1', 'rank1'],
       ['snd', '2nd', 'second', 'r2', 'rank2'],
@@ -704,44 +683,32 @@
     });
   }
 
-  // 다중응답(MA) 시작~끝 변수 범위 계산
   function getMaRange(q) {
     const colSet = new Set(rawDataColumns);
     if (rawDataColumns.length > 0) {
-      // Rawdata에서 q.var_숫자 형태 컬럼 탐색
       const numCols = rawDataColumns.filter(c => {
         if (!c.startsWith(q.var + '_')) return false;
-        const tail = c.slice(q.var.length + 1);
-        return /^\d+$/.test(tail);
+        return /^\d+$/.test(c.slice(q.var.length + 1));
       });
-      if (numCols.length >= 2) {
-        return `${numCols[0]} to ${numCols[numCols.length - 1]}`;
-      } else if (numCols.length === 1) {
-        return numCols[0];
-      } else if (colSet.has(q.var)) {
-        return q.var;
-      }
+      if (numCols.length >= 2) return `${numCols[0]} to ${numCols[numCols.length - 1]}`;
+      if (numCols.length === 1) return numCols[0];
+      if (colSet.has(q.var)) return q.var;
     }
     if (q.options.length > 0) {
-      const firstCode = q.options[0].code;
-      const lastCode = q.options[q.options.length - 1].code;
-      return `${q.var}_${firstCode} to ${q.var}_${lastCode}`;
+      return `${q.var}_${q.options[0].code} to ${q.var}_${q.options[q.options.length - 1].code}`;
     }
     return `${q.var}_1 to ${q.var}_n`;
   }
 
-  // 그리드 행(Row) 변수명 매칭 (예: c4a, c17a1, c201, e52ba, c16a_1 to c16a_15)
   function getGridRowVar(q, rowItem, isMultiplePerRow) {
     const colSet = new Set(rawDataColumns);
     const rCode = rowItem.code;
     if (!isMultiplePerRow) {
-      const candidates = [`${q.var}${rCode}`, `${q.var}_${rCode}`];
-      for (const cand of candidates) {
+      for (const cand of [`${q.var}${rCode}`, `${q.var}_${rCode}`]) {
         if (colSet.has(cand)) return cand;
       }
       return `${q.var}${rCode}`;
     } else {
-      // Grid, multiple answers per row (예: c16a_1 to c16a_15)
       const prefix1 = `${q.var}${rCode}_`;
       const prefix2 = `${q.var}_${rCode}_`;
       const matched = rawDataColumns.filter(c => {
@@ -749,27 +716,20 @@
         if (c.startsWith(prefix2)) return /^\d+$/.test(c.slice(prefix2.length));
         return false;
       });
-      if (matched.length >= 2) {
-        return `${matched[0]} to ${matched[matched.length - 1]}`;
-      }
+      if (matched.length >= 2) return `${matched[0]} to ${matched[matched.length - 1]}`;
       const firstCol = q.cols.length > 0 ? q.cols[0].code : '1';
       const lastCol = q.cols.length > 0 ? q.cols[q.cols.length - 1].code : 'n';
       return `${q.var}${rCode}_${firstCol} to ${q.var}${rCode}_${lastCol}`;
     }
   }
 
-  // Ranking 변수 배열 반환 (1st, 2nd, 3rd, 4th, 5th...)
   function getRankingVars(q) {
     const defaultSuffixes = ['fst', 'snd', 'trd', 'fth', 'fif', '6th', '7th'];
     const count = q.rankCount || 3;
     const vars = [];
     for (let i = 0; i < count; i++) {
-      if (q.rankVars && q.rankVars[i]) {
-        vars.push(q.rankVars[i]);
-      } else {
-        const suf = defaultSuffixes[i] || `${i + 1}th`;
-        vars.push(`${q.var}_${suf}`);
-      }
+      if (q.rankVars && q.rankVars[i]) vars.push(q.rankVars[i]);
+      else vars.push(`${q.var}_${defaultSuffixes[i] || `${i + 1}th`}`);
     }
     return vars;
   }
@@ -779,39 +739,102 @@
     return labels[idx] || `${idx + 1}th`;
   }
 
-  // Base 문자열 포맷팅 (/COR="BASE:...")
   function formatBase(baseStr) {
     let b = String(baseStr || '').trim();
     if (!b) return 'BASE:All';
-    if (/^base\s*:/i.test(b)) {
-      b = b.replace(/^base\s*:\s*/i, 'BASE:');
-    } else {
-      b = 'BASE:' + b;
-    }
+    if (/^base\s*:/i.test(b)) b = b.replace(/^base\s*:\s*/i, 'BASE:');
+    else b = 'BASE:' + b;
     return b.replace(/^BASE:all$/i, 'BASE:All');
   }
 
-  // 배너 문자열 계산 (/TAB BY절용 + 구분, /STA CPC절용 공백 구분)
+  // 배너 변수 파싱 및 d -> x 매핑
+  function parseBannerTokens() {
+    const raw = document.getElementById('bannerInput').value.trim();
+    if (!raw) return [];
+    const seen = new Set();
+    const tokens = [];
+    raw.split(/[\s+,]+/).forEach(t => {
+      const clean = t.trim();
+      if (!clean) return;
+      const upper = clean.toUpperCase();
+      if (upper === 'T1' || upper === 'T2' || upper === 'TOTAL') return;
+      if (!seen.has(clean)) {
+        seen.add(clean);
+        tokens.push(clean);
+      }
+    });
+    return tokens;
+  }
+
+  function toRowBannerVar(dVar) {
+    // dco -> xco, ds1 -> xs1, dage -> xage / d로 시작하지 않으면 xMP_CORE, xb6a 형태
+    if (/^d/i.test(dVar)) {
+      return 'x' + dVar.slice(1);
+    }
+    return 'x' + dVar;
+  }
+
   function getBannerConfig() {
-    const mode = document.getElementById('bannerMode').value;
-    if (mode === 'blank') {
-      return { byPart: 'T1', cpcPart: '' };
+    const tokens = parseBannerTokens();
+    if (!tokens.length) {
+      return {
+        tokens: [],
+        rowTokens: [],
+        byPart: 'T1+배너',
+        cpcPart: ':배너'
+      };
     }
-    if (mode === 'placeholder') {
-      return { byPart: 'T1+배너', cpcPart: ':배너' };
-    }
-    const raw = document.getElementById('bannerCustom').value.trim();
-    if (!raw) return { byPart: 'T1', cpcPart: '' };
-    const tokens = raw.split(/[\s+]+/).filter(Boolean).filter(t => t.toUpperCase() !== 'T1');
-    if (!tokens.length) return { byPart: 'T1', cpcPart: '' };
     return {
+      tokens,
+      rowTokens: tokens.map(toRowBannerVar),
       byPart: 'T1+' + tokens.join('+'),
       cpcPart: ':' + tokens.join(' ')
     };
   }
 
-  // 1. VALUE LABEL 신택스 생성
+  // 배너x배너 (< Table BxB >) 신택스 생성
+  function generateBxBSyntax() {
+    if (!document.getElementById('includeBxB').checked) return '';
+    const cfg = getBannerConfig();
+    if (!cfg.tokens.length) return '';
+
+    const cap = document.getElementById('capText').value;
+    const includeCompute = document.getElementById('includeBxBCompute').checked;
+    const dVars = cfg.tokens;
+    const xVars = cfg.rowTokens;
+    const firstX = xVars[0];
+    const spaceJoinedD = dVars.join(' ');
+
+    const blocks = [];
+
+    if (includeCompute) {
+      const computeLines = dVars.map((dVar, i) => `COMPUTE ${xVars[i]} = ${dVar} .`);
+      blocks.push(computeLines.join('\n'));
+    }
+
+    const cpcLines = xVars.map(xVar => `       CPC(${xVar} (F5.1)'':${spaceJoinedD})`).join('\n');
+
+    blocks.push(`TABLES 
+  /FORMAT=BLANK MISSING ('')
+  /PTO=T1 'TOTAL' T2 'Base for %' /FTO=TT3 'Total'
+  /GBASE=CASES
+  /MRG=M''${firstX}
+  /TAB=T2+${xVars.join('+')}
+       BY T1+${dVars.join('+')}
+  /STA=COU(T2(PAREN6.0)'')
+${cpcLines}
+  /COR="BASE:All"
+  /TIT= 
+"< Table BxB > Banner by Banner"
+ /CAP= 
+"${cap}".`);
+
+    return blocks.join('\n\n');
+  }
+
+  // 1. VALUE LABELS 신택스 생성
   function generateValueLabelsSyntax() {
+    const labelCmd = document.getElementById('labelKeyword').value;
     const blocks = [];
     parsedQuestions.forEach(q => {
       if (q.type === 'SKIP' || q.type === 'NUMERIC') return;
@@ -828,9 +851,7 @@
         varTarget = maRange !== q.var ? `/${maRange} ${rRange}` : `/${rRange}`;
       } else if (q.type === 'GRID_SA' || q.type === 'GRID_SCALE') {
         if (q.rows.length >= 2) {
-          const firstV = getGridRowVar(q, q.rows[0], false);
-          const lastV = getGridRowVar(q, q.rows[q.rows.length - 1], false);
-          varTarget = `/${firstV} to ${lastV}`;
+          varTarget = `/${getGridRowVar(q, q.rows[0], false)} to ${getGridRowVar(q, q.rows[q.rows.length - 1], false)}`;
         } else if (q.rows.length === 1) {
           varTarget = `/${getGridRowVar(q, q.rows[0], false)}`;
         }
@@ -838,8 +859,7 @@
         if (q.rows.length >= 1) {
           const firstRange = getGridRowVar(q, q.rows[0], true).split(' to ')[0];
           const lastRangeParts = getGridRowVar(q, q.rows[q.rows.length - 1], true).split(' to ');
-          const lastVar = lastRangeParts[lastRangeParts.length - 1];
-          varTarget = `/${firstRange} to ${lastVar}`;
+          varTarget = `/${firstRange} to ${lastRangeParts[lastRangeParts.length - 1]}`;
         }
       }
 
@@ -848,70 +868,34 @@
     });
 
     if (!blocks.length) return '';
-    return `value lable\n${blocks.join('\n')}.`;
+    return `${labelCmd}\n${blocks.join('\n')}.`;
   }
 
-  // Scale 리코드 및 라벨 생성 헬퍼
   function getScaleRecodeSpec(q) {
     const mode = document.getElementById('scaleRecodeMode').value;
     const opts = (q.cols && q.cols.length > 0) ? q.cols : q.options;
     const n = opts ? opts.length : 5;
 
     if (mode === 'fixed5' || n === 5) {
-      return {
-        recode: '(4,5=1)(3=2)(1,2=3)',
-        labels: [
-          `1 'Top2(④+⑤)'`,
-          `2 'Medium(③)'`,
-          `3 'Bottom2(①+②)'`
-        ]
-      };
+      return { recode: '(4,5=1)(3=2)(1,2=3)', labels: [`1 'Top2(④+⑤)'`, `2 'Medium(③)'`, `3 'Bottom2(①+②)'`] };
     }
     if (n === 6) {
-      return {
-        recode: '(5,6=1)(3,4=2)(1,2=3)',
-        labels: [
-          `1 'Top2(⑤+⑥)'`,
-          `2 'Medium(③+④)'`,
-          `3 'Bottom2(①+②)'`
-        ]
-      };
+      return { recode: '(5,6=1)(3,4=2)(1,2=3)', labels: [`1 'Top2(⑤+⑥)'`, `2 'Medium(③+④)'`, `3 'Bottom2(①+②)'`] };
     }
     if (n === 7) {
-      return {
-        recode: '(6,7=1)(3,4,5=2)(1,2=3)',
-        labels: [
-          `1 'Top2(⑥+⑦)'`,
-          `2 'Medium(③+④+⑤)'`,
-          `3 'Bottom2(①+②)'`
-        ]
-      };
+      return { recode: '(6,7=1)(3,4,5=2)(1,2=3)', labels: [`1 'Top2(⑥+⑦)'`, `2 'Medium(③+④+⑤)'`, `3 'Bottom2(①+②)'`] };
     }
     if (n === 11) {
-      return {
-        recode: '(10,11=1)(8,9=2)(1 thru 7=3)',
-        labels: [
-          `1 'Top2(9+10점)'`,
-          `2 'Medium(7+8점)'`,
-          `3 'Bottom(0~6점)'`
-        ]
-      };
+      return { recode: '(10,11=1)(8,9=2)(1 thru 7=3)', labels: [`1 'Top2(9+10점)'`, `2 'Medium(7+8점)'`, `3 'Bottom(0~6점)'`] };
     }
-    return {
-      recode: '(4,5=1)(3=2)(1,2=3)',
-      labels: [
-        `1 'Top2(④+⑤)'`,
-        `2 'Medium(③)'`,
-        `3 'Bottom2(①+②)'`
-      ]
-    };
+    return { recode: '(4,5=1)(3=2)(1,2=3)', labels: [`1 'Top2(④+⑤)'`, `2 'Medium(③)'`, `3 'Bottom2(①+②)'`] };
   }
 
-  // 단일 Scale 변수 신택스 블록 생성
   function buildScaleSyntaxBlock(varName, tableId, titleText, baseStr, q) {
     const banner = getBannerConfig();
     const prefix = document.getElementById('titlePrefix').value;
     const cap = document.getElementById('capText').value;
+    const labelCmd = document.getElementById('labelKeyword').value;
     const includeMed = document.getElementById('scaleIncludeMedian').checked;
     const spec = getScaleRecodeSpec(q);
 
@@ -919,18 +903,11 @@
     const ddVar = `DD${varName}`;
     const dddVar = `DDD${varName}`;
 
-    const computeLines = [
-      `COMPUTE ${dVar} = ${varName} .`,
-      `COMPUTE ${ddVar} = ${varName} .`
-    ];
+    const computeLines = [`COMPUTE ${dVar} = ${varName} .`, `COMPUTE ${ddVar} = ${varName} .`];
     if (includeMed) computeLines.push(`COMPUTE ${dddVar} = ${varName} .`);
 
-    const obsLines = includeMed
-      ? `  /OBS=${ddVar}\n  /OBS=${dddVar}`
-      : `  /OBS=${ddVar}`;
-    const tabVars = includeMed
-      ? `T2+M+${dVar}+${ddVar}+${dddVar}`
-      : `T2+M+${dVar}+${ddVar}`;
+    const obsLines = includeMed ? `  /OBS=${ddVar}\n  /OBS=${dddVar}` : `  /OBS=${ddVar}`;
+    const tabVars = includeMed ? `T2+M+${dVar}+${ddVar}+${dddVar}` : `T2+M+${dVar}+${ddVar}`;
     const staExtra = includeMed
       ? `       MEA(${ddVar}             (F5.2)"[Mean]")\n       MED(${dddVar}             (F5.2)"[Median]")`
       : `       MEA(${ddVar}             (F5.2)"[Mean]")`;
@@ -939,7 +916,7 @@
 
 RECODE ${dVar}${spec.recode}.
 
-VALUE LABLE
+${labelCmd}
 /${dVar}
 ${spec.labels.join('\n')}.
 
@@ -962,7 +939,6 @@ ${staExtra}
 "${cap}".`;
   }
 
-  // 2. TABLES 신택스 생성
   function generateTablesSyntax() {
     const blocks = [];
     const banner = getBannerConfig();
@@ -973,7 +949,6 @@ ${staExtra}
       if (q.type === 'SKIP') return;
       const upperVar = q.var.toUpperCase();
 
-      // (1) Single Answer
       if (q.type === 'SA') {
         blocks.push(`TABLES 
   /FORMAT=BLANK MISSING ('')
@@ -990,8 +965,6 @@ ${staExtra}
  /CAP= 
 "${cap}".`);
       }
-
-      // (2) Multiple Answer
       else if (q.type === 'MA') {
         const maRange = getMaRange(q);
         blocks.push(`TABLES 
@@ -1009,8 +982,6 @@ ${staExtra}
  /CAP= 
 "${cap}".`);
       }
-
-      // (3) Ranking (1st, 1st+2nd, 1st+2nd+3rd, 4th, 5th... 동적 생성)
       else if (q.type === 'RANKING') {
         const rVars = getRankingVars(q);
         for (let idx = 0; idx < rVars.length; idx++) {
@@ -1037,8 +1008,6 @@ ${staExtra}
 "${cap}".`);
         }
       }
-
-      // (4) Grid - Single Answer per Row
       else if (q.type === 'GRID_SA') {
         q.rows.forEach(rItem => {
           const rowVar = getGridRowVar(q, rItem, false);
@@ -1059,8 +1028,6 @@ ${staExtra}
 "${cap}".`);
         });
       }
-
-      // (5) Grid - Multiple Answers per Row
       else if (q.type === 'GRID_MA') {
         q.rows.forEach(rItem => {
           const rowRange = getGridRowVar(q, rItem, true);
@@ -1082,23 +1049,13 @@ ${staExtra}
 "${cap}".`);
         });
       }
-
-      // (6) Grid - Scale per Row
       else if (q.type === 'GRID_SCALE') {
         q.rows.forEach(rItem => {
           const rowVar = getGridRowVar(q, rItem, false);
           const rowBase = rItem.logic ? rItem.logic : q.base;
-          blocks.push(buildScaleSyntaxBlock(
-            rowVar,
-            rowVar.toUpperCase(),
-            `${q.q}_${rItem.label}`,
-            rowBase,
-            q
-          ));
+          blocks.push(buildScaleSyntaxBlock(rowVar, rowVar.toUpperCase(), `${q.q}_${rItem.label}`, rowBase, q));
         });
       }
-
-      // (7) Numeric
       else if (q.type === 'NUMERIC') {
         const ddVar = `DD${q.var}`;
         const dddVar = `DDD${q.var}`;
@@ -1124,8 +1081,6 @@ TABLES
  /CAP= 
 "${cap}".`);
       }
-
-      // (8) Scale
       else if (q.type === 'SCALE') {
         blocks.push(buildScaleSyntaxBlock(q.var, upperVar, q.q, q.base, q));
       }
@@ -1134,7 +1089,20 @@ TABLES
     return blocks.join('\n\n');
   }
 
-  // 좌측 문항 리스트 렌더링 (문항별 유형 변경 및 순위 개수 조절 가능)
+  // CP949 저장 경고 방지용 문자 정규화
+  function sanitizeText(str) {
+    if (!document.getElementById('sanitizeCP949').checked) return str;
+    return str
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/\u2021/g, '<>')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/Ü/g, 'U').replace(/ü/g, 'u')
+      .replace(/Ö/g, 'O').replace(/ö/g, 'o')
+      .replace(/Ä/g, 'A').replace(/ä/g, 'a')
+      .replace(/ß/g, 'ss');
+  }
+
   function renderQuestionList() {
     const container = document.getElementById('questionList');
     const keyword = document.getElementById('qSearch').value.trim().toLowerCase();
@@ -1195,8 +1163,7 @@ TABLES
   }
 
   function updateQuestionRankCount(idx, val) {
-    const n = Math.max(1, Math.min(7, parseInt(val, 10) || 3));
-    parsedQuestions[idx].rankCount = n;
+    parsedQuestions[idx].rankCount = Math.max(1, Math.min(7, parseInt(val, 10) || 3));
     renderAll();
   }
 
@@ -1208,18 +1175,32 @@ TABLES
   }
 
   function renderAll() {
+    const cfg = getBannerConfig();
+    const previewEl = document.getElementById('bannerPreview');
+    if (cfg.tokens.length > 0) {
+      const pairs = cfg.tokens.map((d, i) => `${d}→${cfg.rowTokens[i]}`);
+      previewEl.textContent = `인식된 배너 ${cfg.tokens.length}개: ${pairs.join(', ')}`;
+    } else {
+      previewEl.textContent = `배너 미입력 상태 (기본 '배너' 텍스트 적용, BxB 미생성)`;
+    }
+
     const labelSyn = generateValueLabelsSyntax();
+    const bxbSyn = generateBxBSyntax();
     const tableSyn = generateTablesSyntax();
-    let finalOutput = '';
 
-    if (currentTab === 'labels') finalOutput = labelSyn;
-    else if (currentTab === 'tables') finalOutput = tableSyn;
-    else finalOutput = [labelSyn, tableSyn].filter(Boolean).join('\n\n\n');
+    let rawOutput = '';
+    if (currentTab === 'labels') rawOutput = labelSyn;
+    else if (currentTab === 'bxb') rawOutput = bxbSyn || '* 상단 배너 변수 입력칸에 배너 변수를 입력해 주세요.';
+    else if (currentTab === 'tables') rawOutput = tableSyn;
+    else rawOutput = [labelSyn, bxbSyn, tableSyn].filter(Boolean).join('\n\n\n');
 
+    const finalOutput = sanitizeText(rawOutput);
     document.getElementById('syntaxOutput').textContent = finalOutput;
+
     const activeCount = parsedQuestions.filter(q => q.type !== 'SKIP').length;
+    const bxbStatus = bxbSyn ? 'BxB 포함 + ' : '';
     document.getElementById('syntaxSummary').textContent =
-      `총 ${parsedQuestions.length}개 문항 중 ${activeCount}개 문항 신택스 생성 완료 (${finalOutput.split('\n').length}줄)`;
+      `${bxbStatus}총 ${parsedQuestions.length}개 문항 중 ${activeCount}개 문항 신택스 생성 완료 (${finalOutput.split('\n').length}줄)`;
   }
 
   function copyCurrentSyntax() {
